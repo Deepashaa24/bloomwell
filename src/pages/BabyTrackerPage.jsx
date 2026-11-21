@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Baby, Baby as BabyIcon, Clock3, Droplets, Heart, ImagePlus, Moon, Plus, Ruler, Sparkles } from 'lucide-react';
-import { babyAPI } from '../services/api';
+import { babyAPI, API_URL } from '../services/api';
 import FeedingTrendsChart from '../components/FeedingTrendsChart';
 import { Line, LineChart, ResponsiveContainer } from 'recharts';
 
 const tabs = ['Feed', 'Sleep', 'Diaper'];
-const mediaUrl = (value) => value?.startsWith('http') ? value : value ? `${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api$/, '')}${value}` : '';
+const mediaUrl = (value) => value?.startsWith('http') ? value : value ? `${API_URL.replace(/\/api$/, '')}${value}` : '';
 const blankForm = { amountMl: '', durationMinutes: '', side: 'both', hours: 0, minutes: 0, diaperType: 'wet' };
 const blankGrowth = { weightKg: '', heightCm: '', headCircumferenceCm: '', date: new Date().toISOString().slice(0, 10), photo: null, preview: '' };
 

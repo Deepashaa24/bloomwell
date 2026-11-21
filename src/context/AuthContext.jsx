@@ -3,6 +3,24 @@ import { authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
 
+const getAuthPayload = (response) => {
+  const { token, user } = response.data || {};
+  if (!token || !user) {
+    throw new Error('The authentication server returned an invalid response');
+  }
+  return { token, user };
+};
+
+const getAuthErrorMessage = (error) => {
+  if (error.response?.data?.message) {
+    return error.response.data.message;
+  }
+  if (error.request) {
+    return 'Unable to reach the authentication server. Check VITE_API_URL and backend logs.';
+  }
+  return error.message || 'Authentication failed';
+};
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -23,14 +41,19 @@ export const AuthProvider = ({ children }) => {
 
       if (storedToken && storedUser) {
         setToken(storedToken);
-        setUser(JSON.parse(storedUser));
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch (error) {
+          console.error('Could not parse stored user profile:', error);
+          localStorage.removeItem('user');
+        }
         try {
           const response = await authAPI.getMe();
           const nextUser = response.data.user;
           localStorage.setItem('user', JSON.stringify(nextUser));
           setUser(nextUser);
         } catch (error) {
-          console.error('Could not refresh user profile:', error);
+          console.error('Could not refresh user profile:', getAuthErrorMessage(error));
         }
       }
 
@@ -43,7 +66,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const response = await authAPI.login(email, password);
-      const { token, user } = response.data;
+      const { token, user } = getAuthPayload(response);
 
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
@@ -53,10 +76,10 @@ export const AuthProvider = ({ children }) => {
 
       return { success: true };
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Login error:', getAuthErrorMessage(error));
       return {
         success: false,
-        error: error.response?.data?.message || 'Login failed',
+        error: getAuthErrorMessage(error),
       };
     }
   };
@@ -64,7 +87,7 @@ export const AuthProvider = ({ children }) => {
   const register = async (name, email, password) => {
     try {
       const response = await authAPI.register(name, email, password);
-      const { token, user } = response.data;
+      const { token, user } = getAuthPayload(response);
 
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
@@ -74,14 +97,13 @@ export const AuthProvider = ({ children }) => {
 
       return { success: true };
     } catch (error) {
-      console.error('Register error:', error);
+      console.error('Register error:', getAuthErrorMessage(error));
       return {
         success: false,
-        error: error.response?.data?.message || 'Registration failed',
+        error: getAuthErrorMessage(error),
       };
     }
   };
-
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -106,7 +128,7 @@ export const AuthProvider = ({ children }) => {
       register,
       logout,
       updateUser,
-      isAuthenticated: !!token,
+      isAuthenticated: Boolean(token && user),
     }}>
       {children}
     </AuthContext.Provider>

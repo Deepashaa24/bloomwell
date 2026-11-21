@@ -1,6 +1,20 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const configuredApiUrl = import.meta.env.VITE_API_URL;
+const isProduction = import.meta.env.PROD;
+
+if (isProduction && !configuredApiUrl) {
+  throw new Error('VITE_API_URL is required in production. Set it to the backend URL ending in /api.');
+}
+
+const normalizeApiUrl = (value) => {
+  const trimmed = value.replace(/\/+$/, '');
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+};
+
+export const API_URL = normalizeApiUrl(
+  configuredApiUrl || 'http://localhost:5000/api',
+);
 
 // Create axios instance
 const api = axios.create({
@@ -17,7 +31,7 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    console.log('API Request:', config.method.toUpperCase(), config.url, config.data);
+    console.log('API Request:', config.method.toUpperCase(), config.url);
     return config;
   },
   (error) => {
@@ -35,7 +49,6 @@ api.interceptors.response.use(
   (error) => {
     console.error('API Error:', error.response?.status, error.response?.data || error.message);
     if (error.response?.status === 401) {
-      // Token expiblue or invalid
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
@@ -136,3 +149,62 @@ export const feedbackAPI = {
 };
 
 export default api;
+
+// Projects API calls
+export const projectsAPI = {
+  list: () => api.get('/projects'),
+  create: (data) => api.post('/projects', data),
+  get: (id) => api.get(`/projects/${id}`),
+  update: (id, data) => api.patch(`/projects/${id}`, data),
+  delete: (id) => api.delete(`/projects/${id}`),
+};
+
+// Notes API calls
+export const notesAPI = {
+  list: (projectId) => api.get(`/projects/${projectId}/notes`),
+  create: (projectId, data) => api.post(`/projects/${projectId}/notes`, data),
+  get: (projectId, noteId) => api.get(`/projects/${projectId}/notes/${noteId}`),
+  update: (projectId, noteId, data) => api.patch(`/projects/${projectId}/notes/${noteId}`, data),
+  delete: (projectId, noteId) => api.delete(`/projects/${projectId}/notes/${noteId}`),
+};
+
+// Files API calls
+export const filesAPI = {
+  list: (projectId) => api.get(`/projects/${projectId}/files`),
+  upload: (projectId, file) => { const formData = new FormData(); formData.append('file', file); return api.post(`/projects/${projectId}/files`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }); },
+  get: (projectId, fileId) => api.get(`/projects/${projectId}/files/${fileId}`),
+  download: (projectId, fileId) => api.get(`/projects/${projectId}/files/${fileId}/download`, { responseType: 'blob' }),
+  delete: (projectId, fileId) => api.delete(`/projects/${projectId}/files/${fileId}`),
+};
+
+// Members API calls
+export const membersAPI = {
+  list: (projectId) => api.get(`/projects/${projectId}/members`),
+  invite: (projectId, data) => api.post(`/projects/${projectId}/members/invite`, data),
+  update: (projectId, memberId, data) => api.patch(`/projects/${projectId}/members/${memberId}`, data),
+  remove: (projectId, memberId) => api.delete(`/projects/${projectId}/members/${memberId}`),
+};
+
+// Analytics API calls
+export const analyticsAPI = {
+  getProjectStats: (projectId) => api.get(`/projects/${projectId}/analytics/stats`),
+  getActivity: (projectId, range = '30') => api.get(`/projects/${projectId}/analytics/activity?range=${range}`),
+  getFilesStat: (projectId) => api.get(`/projects/${projectId}/analytics/files`),
+};
+
+// Sharing API calls
+export const sharingAPI = {
+  createLink: (projectId, data) => api.post(`/projects/${projectId}/share`, data),
+  getLink: (projectId, token) => api.get(`/projects/${projectId}/share/${token}`),
+  getByToken: (token) => api.get(`/public/projects/${token}`),
+  updateLink: (projectId, token, data) => api.patch(`/projects/${projectId}/share/${token}`, data),
+  revokeLink: (projectId, token) => api.delete(`/projects/${projectId}/share/${token}`),
+  listLinks: (projectId) => api.get(`/projects/${projectId}/share`),
+};
+
+// Gemini API calls
+export const geminiAPI = {
+  generateInsight: (projectId, data) => api.post(`/projects/${projectId}/gemini/insight`, data),
+  summarizeNotes: (projectId, data) => api.post(`/projects/${projectId}/gemini/summarize`, data),
+  suggestTasks: (projectId, data) => api.post(`/projects/${projectId}/gemini/tasks`, data),
+};

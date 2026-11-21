@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { aiAPI } from '../services/api';
+import { aiAPI, API_URL } from '../services/api';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const welcomeMessage = { id: 'welcome', role: 'assistant', content: 'Hi, I’m Bloomwell AI. I can help you understand your logged cycle patterns, symptoms, sleep, and wellbeing. I’ll keep things educational and practical, and I’ll always suggest a clinician for anything medically concerning.' };
 
 export const useChat = (conversationId) => {

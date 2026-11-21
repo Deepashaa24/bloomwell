@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { BarChart3, CalendarDays, Home, LogOut, MessageSquare, Moon, Settings, Sun } from 'lucide-react';
+import { BarChart3, CalendarDays, Home, LogOut, MessageSquare, Moon, Settings, Sun, FolderOpen } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import Avatar from './Avatar';
 import { useAuth } from '../context/AuthContext';
@@ -8,6 +8,7 @@ import { useTheme } from '../context/ThemeContext';
 
 const navItems = [
   { path: '/', label: 'Today', icon: Home },
+  { path: '/projects', label: 'Projects', icon: FolderOpen },
   { path: '/calendar', label: 'Calendar', icon: CalendarDays },
   { path: '/reports', label: 'Insights', icon: BarChart3 },
   { path: '/settings', label: 'Settings', icon: Settings },

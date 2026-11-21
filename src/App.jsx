@@ -1,8 +1,9 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 const AuthPage = lazy(() => import('./pages/AuthPage'));
+const DemoDashboardPage = lazy(() => import('./pages/DemoDashboardPage'));
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const CalendarPage = lazy(() => import('./pages/CalendarPage'));
@@ -12,6 +13,12 @@ const FeedbackPage = lazy(() => import('./pages/FeedbackPage'));
 const PregnancyDashboardPage = lazy(() => import('./pages/PregnancyDashboardPage'));
 const BabyTrackerPage = lazy(() => import('./pages/BabyTrackerPage'));
 const TryingToConceivePage = lazy(() => import('./pages/TryingToConceivePage'));
+const ProjectsPage = lazy(() => import('./pages/ProjectsPage'));
+const ProjectDetailPage = lazy(() => import('./pages/ProjectDetailPage'));
+const ProjectSettingsPage = lazy(() => import('./pages/ProjectSettingsPage'));
+const ProjectAnalyticsPage = lazy(() => import('./pages/ProjectAnalyticsPage'));
+const NewProjectPage = lazy(() => import('./pages/NewProjectPage'));
+const PublicSharePage = lazy(() => import('./pages/PublicSharePage'));
 const CycleSettingsPage = lazy(() => import('./pages/settings/CycleSettingsPage'));
 const PregnancySettingsPage = lazy(() => import('./pages/settings/PregnancySettingsPage'));
 const WaterSettingsPage = lazy(() => import('./pages/settings/WaterSettingsPage'));
@@ -53,7 +60,20 @@ const DashboardEntry = () => {
   return trackingMode === 'pregnant' ? <PregnancyDashboardPage /> : <DashboardPage />;
 };
 
-function App() {
+const HomeEntry = () => {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) return <PageSkeleton />;
+  if (!isAuthenticated) return <DemoDashboardPage />;
+
+  return (
+    <ProtectedRoute>
+      <AppFrame><DashboardEntry /></AppFrame>
+    </ProtectedRoute>
+  );
+};
+
+const App = () => {
   return (
     <ErrorBoundary>
       <AuthProvider>
@@ -64,15 +84,10 @@ function App() {
             <Route path="/invite/:token" element={<ProtectedRoute><InviteAcceptPage /></ProtectedRoute>} />
             <Route path="/onboarding" element={<ProtectedRoute allowOnboarding><OnboardingPage /></ProtectedRoute>} />
 
+            {/* Public demo for signed-out visitors; signed-in users keep their dashboard. */}
+            <Route path="/" element={<HomeEntry />} />
+
             {/* Protected Routes */}
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <AppFrame><DashboardEntry /></AppFrame>
-                </ProtectedRoute>
-              }
-            />
             <Route path="/dashboard" element={<ProtectedRoute><AppFrame><DashboardEntry /></AppFrame></ProtectedRoute>} />
             <Route
               path="/pregnancy"
@@ -115,6 +130,12 @@ function App() {
             <Route path="/settings/sex" element={<ProtectedRoute><AppFrame><SexTrackingSettingsPage /></AppFrame></ProtectedRoute>} />
             <Route path="/settings/journaling" element={<ProtectedRoute><AppFrame><JournalingSettingsPage /></AppFrame></ProtectedRoute>} />
             <Route path="/settings/family" element={<ProtectedRoute><AppFrame><FamilyCollaboratorsPage /></AppFrame></ProtectedRoute>} />
+            <Route path="/projects" element={<ProtectedRoute><AppFrame><ProjectsPage /></AppFrame></ProtectedRoute>} />
+            <Route path="/projects/new" element={<ProtectedRoute><AppFrame><NewProjectPage /></AppFrame></ProtectedRoute>} />
+            <Route path="/projects/:projectId" element={<ProtectedRoute><AppFrame><ProjectDetailPage /></AppFrame></ProtectedRoute>} />
+            <Route path="/projects/:projectId/settings" element={<ProtectedRoute><AppFrame><ProjectSettingsPage /></AppFrame></ProtectedRoute>} />
+            <Route path="/projects/:projectId/analytics" element={<ProtectedRoute><AppFrame><ProjectAnalyticsPage /></AppFrame></ProtectedRoute>} />
+            <Route path="/share/:token" element={<PublicSharePage />} />
             <Route
               path="/feedback"
               element={
